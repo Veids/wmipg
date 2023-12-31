@@ -12,7 +12,7 @@ packages=[
 ]
 
 [tool.poetry.scripts]
-fwdctrl = "wmipg:main"
+wmipg = "wmipg:main"
 
 [tool.poetry.dependencies]
 python = "^3.11"
