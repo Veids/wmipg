@@ -147,7 +147,7 @@ class WMIPG(cmd2.Cmd):
         )
 
 
-def main(
+def _main(
     address,
     username='',
     password='',
@@ -204,7 +204,7 @@ def main(
     dcom.disconnect()
 
 
-if __name__ == '__main__':
+def main():
     print(version.BANNER)
 
     parser = argparse.ArgumentParser(add_help=True, description="Executes a semi-interactive shell using Windows "
@@ -271,7 +271,7 @@ if __name__ == '__main__':
         if options.aesKey is not None:
             options.k = True
 
-        main(
+        _main(
             address,
             username,
             password,
@@ -292,3 +292,6 @@ if __name__ == '__main__':
         sys.exit(1)
 
     sys.exit(0)
+
+if __name__ == '__main__':
+    main()
