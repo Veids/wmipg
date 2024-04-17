@@ -8,7 +8,7 @@ from rich.table import Table
 from datetime import datetime, timedelta
 from enum import Enum
 
-from src.common import console, print_data
+from src.common import console, print_data, columnFormatter
 
 
 class ShadowStates(Enum):
@@ -291,3 +291,38 @@ class CIMv2(CommandSet):
                 "Select DriveLetter,DeviceID,FileSystem,SystemVolume,Capacity,Label FROM Win32_Volume"
             )
         )
+
+    ls_parser = cmd2.Cmd2ArgumentParser(description = "List directory content")
+    ls_parser.add_argument("path", action = "store", type = str, help = 'c:\\')
+    @cmd2.with_argparser(ls_parser)
+    def do_ls(self, ns: argparse.Namespace):
+        drive, path = ns.path.split(':')
+        path = path.replace('\\', r'\\')
+
+        directories = self.connector.get_class_instances_raw(f"SELECT Caption,CreationDate,LastAccessed,FileSize FROM CIM_Directory Where Drive='{drive}:' and PATH='{path}'")
+        files = self.connector.get_class_instances_raw(f"SELECT Caption,CreationDate,LastAccessed,FileSize,Version FROM CIM_DataFile Where Drive='{drive}:' and PATH='{path}'")
+
+        columns = ["Caption", "CreationDate", "LastAccessed", "FileSize", "Version"]
+        table = Table(*columns, title = "Directory content")
+
+        for obj in directories + files:
+            props = obj.getProperties()
+            row = []
+
+            for column in columns:
+                if prop := props.get(column):
+                    row.append(columnFormatter(prop, obj))
+                else:
+                    row.append('')
+
+            table.add_row(*row)
+
+        console.print(table)
+
+    stat_parser = cmd2.Cmd2ArgumentParser(description = "Get info about particular file")
+    stat_parser.add_argument("path", action = "store", type = str, help = 'c:\\log.txt')
+    @cmd2.with_argparser(stat_parser)
+    def do_stat(self, ns: argparse.Namespace):
+        path = ns.path.replace('\\', r'\\')
+        obj, _ = self.connector.iWbemServices.GetObject(f"CIM_DataFile.Name=\"{path}\"")
+        print_data([obj], style="column")

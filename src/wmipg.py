@@ -179,7 +179,6 @@ def _main(
 
     try:
         iInterface = dcom.CoCreateInstanceEx(wmi.CLSID_WbemLevel1Login, wmi.IID_IWbemLevel1Login)
-        from IPython import embed; embed()  # DEBUG
         iWbemLevel1Login = wmi.IWbemLevel1Login(iInterface)
 
         app = WMIPG(
