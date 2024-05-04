@@ -2,13 +2,12 @@ import re
 import cmd2
 import argparse
 
-from cmd2 import CommandSet
 from rich import print
 from rich.table import Table
 from datetime import datetime, timedelta
 from enum import Enum
 
-from src.common import console, print_data, columnFormatter
+from common import console, print_data, columnFormatter
 
 
 class ShadowStates(Enum):
@@ -53,15 +52,23 @@ class PingStatusCode(Enum):
     General_Failure = 11050
 
 
-@cmd2.with_default_category('WMI')
-class CIMv2(CommandSet):
-    paths = [
-        "root/cimv2"
-    ]
+@cmd2.with_default_category("WMI")
+class CIMv2(cmd2.CommandSet):
+    paths = ["root/cimv2"]
 
     def __init__(self, connector):
         super().__init__()
         self.connector = connector
+        self.subcmds = list()
+
+    def check_namespace(self, namespace: str) -> bool:
+        return namespace in self.paths
+
+    def load_subcommands(self, _: cmd2.Cmd):
+        pass
+
+    def unload_subcommands(self, _: cmd2.Cmd):
+        pass
 
     def do_pslist(self, _):
         """Get process list"""
@@ -76,7 +83,7 @@ class CIMv2(CommandSet):
         table.add_column("CommandLine")
         table.add_column("Owner")
 
-        res = sorted(res, key = lambda x: x.SessionId)
+        res = sorted(res, key=lambda x: x.SessionId)
 
         for x in res:
             owner = x.GetOwner()
@@ -85,7 +92,14 @@ class CIMv2(CommandSet):
             else:
                 owner = str(owner.Domain) + "\\" + str(owner.User)
 
-            table.add_row(str(x.Name), str(x.SessionId), str(x.ProcessId), str(x.ParentProcessId), str(x.CommandLine), owner)
+            table.add_row(
+                str(x.Name),
+                str(x.SessionId),
+                str(x.ProcessId),
+                str(x.ParentProcessId),
+                str(x.CommandLine),
+                owner,
+            )
 
         console.print(table)
 
@@ -136,20 +150,29 @@ class CIMv2(CommandSet):
         """Enumerated currently logged-on users"""
 
         print_data(
-            self.connector.get_class_instances_raw(
-                "Select * From Win32_LoggedOnUser"
-            )
+            self.connector.get_class_instances_raw("Select * From Win32_LoggedOnUser")
         )
 
     login_history_parser = cmd2.Cmd2ArgumentParser()
-    login_history_parser.add_argument('-l', '--login', action = 'store', type = str, default = None, help = 'Target username')
-    login_history_parser.add_argument('-d', '--days', action = 'store', type = int, default = 7, help = 'Days delta (0 means all)')
+    login_history_parser.add_argument(
+        "-l", "--login", action="store", type=str, default=None, help="Target username"
+    )
+    login_history_parser.add_argument(
+        "-d",
+        "--days",
+        action="store",
+        type=int,
+        default=7,
+        help="Days delta (0 means all)",
+    )
 
     @cmd2.with_argparser(login_history_parser)
     def do_logon_history(self, ns: argparse.Namespace):
         """Print users logon history information"""
 
-        request = ["Select TimeGenerated,Message FROM Win32_NTLogEvent WHERE Logfile='Security' AND EventCode='4624'"]
+        request = [
+            "Select TimeGenerated,Message FROM Win32_NTLogEvent WHERE Logfile='Security' AND EventCode='4624'"
+        ]
 
         if ns.days != 0:
             timeGenerated = datetime.now() - timedelta(days=ns.days)
@@ -160,15 +183,13 @@ class CIMv2(CommandSet):
         if ns.login is not None:
             request.append(f"AND Message LIKE '%{ns.login}%'")
 
-        events = self.connector.get_class_instances_raw(
-            " ".join(request)
-        )
-        ipmask = r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
-        lpmask = r'Logon Process:(.*)'
-        apmask = r'Authentication Package:(.*)'
-        pnmask = r'Package Name (NTLM only):(.*)'
-        loginmask = r'Account Name:(.*)'
-        domainmask = r'Account Domain:(.*)'
+        events = self.connector.get_class_instances_raw(" ".join(request))
+        ipmask = r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"
+        lpmask = r"Logon Process:(.*)"
+        apmask = r"Authentication Package:(.*)"
+        pnmask = r"Package Name (NTLM only):(.*)"
+        loginmask = r"Account Name:(.*)"
+        domainmask = r"Account Domain:(.*)"
 
         table = Table(title="Win32_NTLogEvent")
         table.add_column("TimeGenerated")
@@ -191,7 +212,9 @@ class CIMv2(CommandSet):
             domains = re.findall(domainmask, event.Message)
             pairs = list(map(lambda l, d: f"{d.strip()}\\{l.strip()}", logins, domains))
 
-            date = str(datetime.strptime(event.TimeGenerated.split('.')[0], "%Y%m%d%H%M%S"))
+            date = str(
+                datetime.strptime(event.TimeGenerated.split(".")[0], "%Y%m%d%H%M%S")
+            )
             table.add_row(date, pairs[1], source_ip, lp, ap, pn)
 
         console.print(table)
@@ -199,11 +222,7 @@ class CIMv2(CommandSet):
     def do_shares(self, _):
         """List windows shares"""
 
-        print_data(
-            self.connector.get_class_instances_raw(
-                "Select * FROM Win32_Share"
-            )
-        )
+        print_data(self.connector.get_class_instances_raw("Select * FROM Win32_Share"))
 
     def do_profiles(self, _):
         """List local user profiles"""
@@ -214,15 +233,19 @@ class CIMv2(CommandSet):
             )
         )
 
-    ping_parser = cmd2.Cmd2ArgumentParser(description = "Get ping result of a remote system")
-    ping_parser.add_argument('address', action = 'store', type = str, help = 'Address to ping')
+    ping_parser = cmd2.Cmd2ArgumentParser(
+        description="Get ping result of a remote system"
+    )
+    ping_parser.add_argument(
+        "address", action="store", type=str, help="Address to ping"
+    )
 
     @cmd2.with_argparser(ping_parser)
     def do_ping(self, ns: argparse.Namespace):
         def pingFormatter(prop, obj):
-            value = prop['value']
-            if prop['name'] == "StatusCode":
-                name = PingStatusCode(value).name.replace('_', ' ')
+            value = prop["value"]
+            if prop["name"] == "StatusCode":
+                name = PingStatusCode(value).name.replace("_", " ")
                 return f"{name} ({value})"
 
             return value
@@ -231,11 +254,13 @@ class CIMv2(CommandSet):
             self.connector.get_class_instances_raw(
                 f"Select Address,StatusCode,ResponseTime,Timeout FROM Win32_PingStatus WHERE Address='{ns.address}'"
             ),
-            customFormatter = pingFormatter
+            customFormatter=pingFormatter,
         )
 
-    shadow_parser = cmd2.Cmd2ArgumentParser(description = "Interact with shadow copies")
-    shadow_subparsers = shadow_parser.add_subparsers(title='action', help='shadow operation')
+    shadow_parser = cmd2.Cmd2ArgumentParser(description="Interact with shadow copies")
+    shadow_subparsers = shadow_parser.add_subparsers(
+        title="action", help="shadow operation"
+    )
 
     @cmd2.with_argparser(shadow_parser)
     def do_shadow(self, ns: argparse.Namespace):
@@ -243,15 +268,15 @@ class CIMv2(CommandSet):
         if handler is not None:
             handler(ns)
         else:
-            self._cmd.do_help('shadow')
+            self._cmd.do_help("shadow")
 
-    shadow_list_parser = cmd2.Cmd2ArgumentParser(description = "Enumerate shadow copies")
+    shadow_list_parser = cmd2.Cmd2ArgumentParser(description="Enumerate shadow copies")
 
-    @cmd2.as_subcommand_to('shadow', 'list', shadow_list_parser)
+    @cmd2.as_subcommand_to("shadow", "list", shadow_list_parser)
     def shadow_list(self, _):
         def shadowListFormatter(prop, obj):
-            value = prop['value']
-            if prop['name'] == "State":
+            value = prop["value"]
+            if prop["name"] == "State":
                 name = ShadowStates(value).name
                 return f"{name} ({value})"
 
@@ -261,11 +286,13 @@ class CIMv2(CommandSet):
             self.connector.get_class_instances_raw(
                 "Select ID,DeviceObject,InstallDate,VolumeName,State,Persistent FROM Win32_ShadowCopy"
             ),
-            customFormatter = shadowListFormatter
+            customFormatter=shadowListFormatter,
         )
 
-    shadow_create_parser = cmd2.Cmd2ArgumentParser(description = "Create a shadow copy")
-    shadow_create_parser.add_argument("volume", action = "store", type = str, help = "Target volume")
+    shadow_create_parser = cmd2.Cmd2ArgumentParser(description="Create a shadow copy")
+    shadow_create_parser.add_argument(
+        "volume", action="store", type=str, help="Target volume"
+    )
 
     @cmd2.as_subcommand_to("shadow", "create", shadow_create_parser)
     def shadow_create(self, ns: argparse.Namespace):
@@ -273,14 +300,18 @@ class CIMv2(CommandSet):
         res = shadow.Create(ns.volume, "ClientAccessible")
         print(f"Created {res.ShadowID}")
 
-    shadow_delete_parser = cmd2.Cmd2ArgumentParser(description = "Remove a shadow copy")
-    shadow_delete_parser.add_argument("ID", action = "store", type = str, help = "Target ShadowID")
+    shadow_delete_parser = cmd2.Cmd2ArgumentParser(description="Remove a shadow copy")
+    shadow_delete_parser.add_argument(
+        "ID", action="store", type=str, help="Target ShadowID"
+    )
 
     @cmd2.as_subcommand_to("shadow", "delete", shadow_delete_parser)
     def shadow_delete(self, ns: argparse.Namespace):
         self.connector.checkiWbemResponse(
             f"Removing shadow {ns.ID}",
-            self.connector.iWbemServices.DeleteInstance('Win32_ShadowCopy.ID="%s"' % ns.ID)
+            self.connector.iWbemServices.DeleteInstance(
+                'Win32_ShadowCopy.ID="%s"' % ns.ID
+            ),
         )
 
     def do_volumes(self, _):
@@ -292,18 +323,23 @@ class CIMv2(CommandSet):
             )
         )
 
-    ls_parser = cmd2.Cmd2ArgumentParser(description = "List directory content")
-    ls_parser.add_argument("path", action = "store", type = str, help = 'c:\\')
+    ls_parser = cmd2.Cmd2ArgumentParser(description="List directory content")
+    ls_parser.add_argument("path", action="store", type=str, help="c:\\")
+
     @cmd2.with_argparser(ls_parser)
     def do_ls(self, ns: argparse.Namespace):
-        drive, path = ns.path.split(':')
-        path = path.replace('\\', r'\\')
+        drive, path = ns.path.split(":")
+        path = path.replace("\\", r"\\")
 
-        directories = self.connector.get_class_instances_raw(f"SELECT Caption,CreationDate,LastAccessed,FileSize FROM CIM_Directory Where Drive='{drive}:' and PATH='{path}'")
-        files = self.connector.get_class_instances_raw(f"SELECT Caption,CreationDate,LastAccessed,FileSize,Version FROM CIM_DataFile Where Drive='{drive}:' and PATH='{path}'")
+        directories = self.connector.get_class_instances_raw(
+            f"SELECT Caption,CreationDate,LastAccessed,FileSize FROM CIM_Directory Where Drive='{drive}:' and PATH='{path}'"
+        )
+        files = self.connector.get_class_instances_raw(
+            f"SELECT Caption,CreationDate,LastAccessed,FileSize,Version FROM CIM_DataFile Where Drive='{drive}:' and PATH='{path}'"
+        )
 
         columns = ["Caption", "CreationDate", "LastAccessed", "FileSize", "Version"]
-        table = Table(*columns, title = "Directory content")
+        table = Table(*columns, title="Directory content")
 
         for obj in directories + files:
             props = obj.getProperties()
@@ -313,16 +349,17 @@ class CIMv2(CommandSet):
                 if prop := props.get(column):
                     row.append(columnFormatter(prop, obj))
                 else:
-                    row.append('')
+                    row.append("")
 
             table.add_row(*row)
 
         console.print(table)
 
-    stat_parser = cmd2.Cmd2ArgumentParser(description = "Get info about particular file")
-    stat_parser.add_argument("path", action = "store", type = str, help = 'c:\\log.txt')
+    stat_parser = cmd2.Cmd2ArgumentParser(description="Get info about particular file")
+    stat_parser.add_argument("path", action="store", type=str, help="c:\\log.txt")
+
     @cmd2.with_argparser(stat_parser)
     def do_stat(self, ns: argparse.Namespace):
-        path = ns.path.replace('\\', r'\\')
-        obj, _ = self.connector.iWbemServices.GetObject(f"CIM_DataFile.Name=\"{path}\"")
+        path = ns.path.replace("\\", r"\\")
+        obj, _ = self.connector.iWbemServices.GetObject(f'CIM_DataFile.Name="{path}"')
         print_data([obj], style="column")
