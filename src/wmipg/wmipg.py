@@ -172,6 +172,15 @@ def main():
         metavar="MAJOR_VERSION:MINOR_VERSION",
         help="DCOM version, format is MAJOR_VERSION:MINOR_VERSION e.g. 5.7",
     )
+    parser.add_argument(
+        "-c",
+        "-cmd",
+        action='append',
+        metavar="COMMAND",
+        dest="cmds",
+        help="Command to execute on connection (can be specified multiple times)",
+        required=False,
+    )
 
     group = parser.add_argument_group("authentication")
 
@@ -267,6 +276,7 @@ def main():
             options.aesKey,
             options.k,
             options.dc_ip,
+            options.cmds
         )
     except KeyboardInterrupt as e:
         logging.error(str(e))

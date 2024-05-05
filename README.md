@@ -7,16 +7,19 @@
 
 # Installation
 
-## pipx
+* pipx
 
 ```bash
 pipx install git+https://github.com/Veids/wmipg.git
 ```
 
-## poetry
+* poetry
 
 ```bash
-pipx install git+https://github.com/Veids/wmipg.git
+git clone https://github.com/Veids/wmipg.git 
+cd wmipg
+poetry install
+poetry shell
 ```
 
 # Functionality
