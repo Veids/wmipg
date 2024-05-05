@@ -14,6 +14,7 @@ from impacket import version
 from impacket.dcerpc.v5.dcomrt import DCOMConnection, COMVERSION
 from impacket.dcerpc.v5.dcom import wmi
 from impacket.krb5.keytab import Keytab
+from IPython import embed
 from rich import print
 
 from wmipg.common import print_data, WMIConnector
@@ -21,8 +22,10 @@ from wmipg.namespaces import CIMv2, StandardCimv2, SecurityCenter2, SMS
 
 
 class WMIPG(cmd2.Cmd):
+    currentNamespace: str = ""
+
     def __init__(self, *args, **kwargs):
-        super().__init__(*args[1:], auto_load_commands=False, **kwargs)
+        super().__init__(allow_cli_args=False, auto_load_commands=False, **kwargs)
 
         self.prompt = "WMIPG> "
         self.default_category = "cmd2 Built-in Commands"
@@ -53,6 +56,7 @@ class WMIPG(cmd2.Cmd):
             self.unregister_command_set(x)
 
         self.connector.login(ns.namespace)
+        self.currentNamespace = ns.namespace
         for x in self.command_sets:
             if x.check_namespace(ns.namespace):
                 print("[+] Loaded %s handler" % x.__class__.__name__)
@@ -73,7 +77,6 @@ class WMIPG(cmd2.Cmd):
         print(
             '            or print_data(self.connector.get_class_instances_raw("Select Name,SessionId,ProcessId,ParentProcessId,CommandLine from win32_Process"))'
         )
-        from IPython import embed
 
         embed()
 
@@ -91,9 +94,27 @@ class WMIPG(cmd2.Cmd):
             style="list" if ns.list else "table",
         )
 
+    supported_namespaces_parser = Cmd2ArgumentParser(
+        description="List implemented namespaces handlers"
+    )
+
     @cmd2.with_category("WMI")
+    @cmd2.with_argparser(supported_namespaces_parser)
     def do_supported_namespaces(self, _):
         print("\n".join("\n".join(x.paths) for x in self.command_sets))
+
+    available_namespaces_parser = Cmd2ArgumentParser(
+        description="List available namespaces under current namespace (not recursive)"
+    )
+
+    @cmd2.with_category("WMI")
+    @cmd2.with_argparser(available_namespaces_parser)
+    def do_available_namespaces(self, _):
+        namespaces = [
+            f"{self.currentNamespace}/{x.Name}"
+            for x in self.connector.get_class_instances_raw("SELECT * FROM __NAMESPACE")
+        ]
+        print(namespaces)
 
 
 def _main(
@@ -105,6 +126,7 @@ def _main(
     aesKey=None,
     doKerberos=False,
     kdcHost=None,
+    rpc_auth_level="default",
     cmds=None,
 ):
     lmhash = ""
@@ -131,7 +153,7 @@ def _main(
         )
         iWbemLevel1Login = wmi.IWbemLevel1Login(iInterface)
 
-        app = WMIPG(iWbemLevel1Login, allow_cli_args=False)
+        app = WMIPG(iWbemLevel1Login, rpc_auth_level)
 
         if cmds:
             for x in cmds:
@@ -175,7 +197,7 @@ def main():
     parser.add_argument(
         "-c",
         "-cmd",
-        action='append',
+        action="append",
         metavar="COMMAND",
         dest="cmds",
         help="Command to execute on connection (can be specified multiple times)",
@@ -212,6 +234,15 @@ def main():
         metavar="ip address",
         help="IP Address of the domain controller. If "
         "ommited it use the domain part (FQDN) specified in the target parameter",
+    )
+    group.add_argument(
+        "-rpc-auth-level",
+        choices=["integrity", "privacy", "default"],
+        nargs="?",
+        default="default",
+        help="default, integrity (RPC_C_AUTHN_LEVEL_PKT_INTEGRITY) or privacy "
+        '(RPC_C_AUTHN_LEVEL_PKT_PRIVACY). For example CIM path "root/MSCluster" would require '
+        "privacy level by default)",
     )
     group.add_argument(
         "-keytab", action="store", help="Read keys for SPN from keytab file"
@@ -276,7 +307,8 @@ def main():
             options.aesKey,
             options.k,
             options.dc_ip,
-            options.cmds
+            options.rpc_auth_level,
+            options.cmds,
         )
     except KeyboardInterrupt as e:
         logging.error(str(e))
