@@ -1,8 +1,8 @@
 import cmd2
 import argparse
 
-from common import WMIConnector
-from sccm.cmds import (
+from wmipg.common import WMIConnector
+from wmipg.sccm.cmds import (
     ApplicationsCMD,
     CollectionsCMD,
     DeploymentsCMD,

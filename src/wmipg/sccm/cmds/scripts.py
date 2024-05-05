@@ -3,8 +3,8 @@ import argparse
 
 from base64 import b64decode
 
-from sccm.lib import Scripts
-from common import print_data, log
+from wmipg.sccm.lib import Scripts
+from wmipg.common import print_data, log
 
 
 @cmd2.with_default_category("Scripts")

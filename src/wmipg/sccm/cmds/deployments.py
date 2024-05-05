@@ -1,8 +1,8 @@
 import cmd2
 import argparse
 
-from sccm.lib import Deployments
-from common import print_data
+from wmipg.sccm.lib import Deployments
+from wmipg.common import print_data
 
 
 @cmd2.with_default_category("Deployments")

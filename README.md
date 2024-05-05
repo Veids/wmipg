@@ -1,6 +1,9 @@
-# WMIPG 
-
-WMI Play Ground
+<p align=center>
+  <br>
+  <span>WMI Play Ground</span>
+  <br>
+  <img width="70%" height="70%" src="images/preview.png"/>
+</p>
 
 # Functionality
 

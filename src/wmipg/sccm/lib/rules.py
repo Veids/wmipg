@@ -1,4 +1,4 @@
-from common import WMIConnector
+from wmipg.common import WMIConnector
 
 
 class Rules:

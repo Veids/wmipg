@@ -1,15 +1,15 @@
 [tool.poetry]
 name = "wmipg"
-version = "0.2.0"
-description = ""
+version = "0.2.1"
+description = "WMI Play Ground"
 authors = ["Veids <veidsme@gmail.com>"]
 readme = "README.md"
 packages=[
-  {"include" = "*", from = "src" }
+  {"include" = "wmipg", from = "src" }
 ]
 
 [tool.poetry.scripts]
-wmipg = "wmipg:main"
+wmipg = "wmipg.wmipg:main"
 
 [tool.poetry.dependencies]
 python = "^3.11"

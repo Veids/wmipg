@@ -1,8 +1,8 @@
 import cmd2
 import argparse
 
-from sccm.lib import Applications
-from common import print_data, console
+from wmipg.sccm.lib import Applications
+from wmipg.common import print_data, console
 
 
 @cmd2.with_default_category("Applications")

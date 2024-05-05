@@ -20,14 +20,11 @@ from impacket.examples.utils import parse_target
 from impacket import version
 from impacket.dcerpc.v5.dcomrt import DCOMConnection, COMVERSION
 from impacket.dcerpc.v5.dcom import wmi
-from impacket.dcerpc.v5.dtypes import NULL
 from impacket.krb5.keytab import Keytab
 from rich import print
 
-from namespaces import CIMv2, StandardCimv2, SecurityCenter2, SMS
-
-import common
-from common import print_data, WMIConnector
+from wmipg.common import print_data, WMIConnector
+from wmipg.namespaces import CIMv2, StandardCimv2, SecurityCenter2, SMS
 
 
 class WMIPG(cmd2.Cmd):
@@ -81,7 +78,7 @@ class WMIPG(cmd2.Cmd):
             '            or self.connector.get_class_instances_raw("Select Name,SessionId,ProcessId,ParentProcessId,CommandLine from win32_Process")'
         )
         print(
-            '            or common.print_data(self.connector.get_class_instances_raw("Select Name,SessionId,ProcessId,ParentProcessId,CommandLine from win32_Process"))'
+            '            or print_data(self.connector.get_class_instances_raw("Select Name,SessionId,ProcessId,ParentProcessId,CommandLine from win32_Process"))'
         )
         from IPython import embed
 

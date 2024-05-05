@@ -1,6 +1,6 @@
 import cmd2
 
-from common import print_data
+from wmipg.common import print_data
 
 
 @cmd2.with_default_category("WMI")

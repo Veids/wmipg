@@ -2,7 +2,7 @@ from datetime import datetime
 
 from typing import List
 
-from common import WMIConnector
+from wmipg.common import WMIConnector
 
 
 class Deployments:

@@ -1,8 +1,8 @@
 import cmd2
 import argparse
 
-from common import print_data
-from sccm.lib import Collections
+from wmipg.common import print_data
+from wmipg.sccm.lib import Collections
 
 
 @cmd2.with_default_category("Collections")

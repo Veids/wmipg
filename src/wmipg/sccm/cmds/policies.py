@@ -1,7 +1,7 @@
 import cmd2
 import argparse
 
-from sccm.lib import Policies
+from wmipg.sccm.lib import Policies
 
 
 @cmd2.with_default_category("Policies")

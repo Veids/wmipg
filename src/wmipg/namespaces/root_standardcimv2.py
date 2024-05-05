@@ -2,7 +2,7 @@ import cmd2
 
 from rich.table import Table
 
-import common
+from wmipg.common import console, print_data
 
 
 @cmd2.with_default_category("WMI")
@@ -49,12 +49,12 @@ class StandardCimv2(cmd2.CommandSet):
                 str(x.RemotePort),
             )
 
-        common.console.print(table)
+        console.print(table)
 
     def do_ipconfig(self, _):
         """Get interface list along with assigned IP address"""
 
-        common.print_data(
+        print_data(
             self.connector.get_class_instances_raw(
                 "Select InterfaceIndex,InterfaceAlias,IPAddress FROM MSFT_NetIPAddress"
             )

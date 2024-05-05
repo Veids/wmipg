@@ -2,7 +2,7 @@ import random
 
 from typing import Optional
 
-from common import WMIConnector, log
+from wmipg.common import WMIConnector, log
 
 
 class Collections:

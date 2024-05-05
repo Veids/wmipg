@@ -1,4 +1,4 @@
-from common import WMIConnector, log
+from wmipg.common import WMIConnector, log
 
 
 class Policies:

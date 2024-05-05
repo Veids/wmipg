@@ -7,7 +7,7 @@ from rich.table import Table
 from datetime import datetime, timedelta
 from enum import Enum
 
-from common import console, print_data, columnFormatter
+from wmipg.common import console, print_data, columnFormatter
 
 
 class ShadowStates(Enum):

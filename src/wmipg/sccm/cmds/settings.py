@@ -3,8 +3,8 @@ import cmd2
 
 from cmd2 import with_default_category
 
-from sccm.lib import Settings
-from common import WMIConnector
+from wmipg.sccm.lib import Settings
+from wmipg.common import WMIConnector
 
 
 @with_default_category("SCCM")
