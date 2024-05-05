@@ -2,8 +2,22 @@
   <br>
   <span>WMI Play Ground</span>
   <br>
-  <img width="70%" height="70%" src="images/preview.png"/>
+  <img src="images/preview.png"/>
 </p>
+
+# Installation
+
+## pipx
+
+```bash
+pipx install git+https://github.com/Veids/wmipg.git
+```
+
+## poetry
+
+```bash
+pipx install git+https://github.com/Veids/wmipg.git
+```
 
 # Functionality
 
@@ -64,3 +78,4 @@ update
 # Credits
 
 * [SharpSCCM](https://github.com/Mayyhem/SharpSCCM)
+* [impacket](https://github.com/fortra/impacket)

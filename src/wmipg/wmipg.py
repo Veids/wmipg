@@ -1,11 +1,4 @@
 #!/usr/bin/env python
-# Impacket - Collection of Python classes for working with network protocols.
-#
-# Copyright (C) 2022 Fortra. All rights reserved.
-#
-# This software is provided under a slightly modified version
-# of the Apache Software License. See the accompanying LICENSE file
-# for more information.
 
 from __future__ import division
 from __future__ import print_function
@@ -110,7 +103,6 @@ def _main(
     domain="",
     hashes=None,
     aesKey=None,
-    noOutput=False,
     doKerberos=False,
     kdcHost=None,
     cmds=None,
@@ -160,11 +152,9 @@ def _main(
 
 
 def main():
-    print(version.BANNER)
-
     parser = argparse.ArgumentParser(
         add_help=True,
-        description="Executes a semi-interactive shell using Windows "
+        description="Executes an interactive command prompt for intraction with Windows "
         "Management Instrumentation.",
     )
     parser.add_argument(
