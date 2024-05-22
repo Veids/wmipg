@@ -52,6 +52,26 @@ class PingStatusCode(Enum):
     General_Failure = 11050
 
 
+class RegValueTypeEnum(Enum):
+    binary = "binary"
+    dword = "dword"
+    qword = "qword"
+    string = "string"
+
+
+REG_MAP = {
+    "HKU": 2147483651,
+    "HKLM": 2147483650,
+}
+
+
+def parse_reg_key(key_name) -> tuple[int, str]:
+    components = key_name.split("\\")
+    path = "\\".join(components[1:])
+    hive = REG_MAP[components[0].upper()]
+    return hive, path
+
+
 @cmd2.with_default_category("WMI")
 class CIMv2(cmd2.CommandSet):
     paths = ["root/cimv2"]
@@ -121,30 +141,103 @@ class CIMv2(cmd2.CommandSet):
             )
         )
 
-    def do_enum_registry(self, _):
-        """Enumerate juicy registry content (WinSCP)"""
+    reg_parser = cmd2.Cmd2ArgumentParser(description="StdRegProv operations")
+    reg_subparsers = reg_parser.add_subparsers(title="entity", help="Comman")
 
+    @cmd2.with_argparser(reg_parser)
+    def do_reg(self, ns: argparse.Namespace):
+        handler = ns.cmd2_handler.get()
+        if handler is not None:
+            # Call whatever subcommand function was selected
+            handler(ns)
+        else:
+            # No subcommand was provided, so call help
+            self.poutput("This command does nothing without sub-parsers registered")
+            self.do_help("get")
+
+    reg_enum_parser = cmd2.Cmd2ArgumentParser(
+        description="Enumerate juicy registry content (WinSCP)"
+    )
+
+    @cmd2.as_subcommand_to("reg", "enum", reg_enum_parser)
+    def reg_enum(self, _):
         srp, _ = self.connector.iWbemServices.GetObject("StdRegProv")
-        HKU = 2147483651
-
-        users = srp.EnumKey(HKU, "").sNames
+        hku = REG_MAP["HKU"]
+        users = srp.EnumKey(hku, "").sNames
 
         winscp = r"Software\Martin Prikryl\WinSCP 2\Sessions"
         winscp_res = {}
         for user in users:
             path = "%s\\%s" % (user, winscp)
-            sessions = srp.EnumKey(HKU, path).sNames
+            sessions = srp.EnumKey(hku, path).sNames
             if sessions:
                 winscp_res[user] = {}
                 for session in sessions:
                     spath = rf"{path}\{session}"
                     winscp_res[user][session] = {
-                        "HostName": srp.GetStringValue(HKU, spath, "HostName").sValue,
-                        "Password": srp.GetStringValue(HKU, spath, "Password").sValue,
-                        "UserName": srp.GetStringValue(HKU, spath, "UserName").sValue,
+                        "HostName": srp.GetStringValue(hku, spath, "HostName").sValue,
+                        "Password": srp.GetStringValue(hku, spath, "Password").sValue,
+                        "UserName": srp.GetStringValue(hku, spath, "UserName").sValue,
                     }
 
         print(winscp_res)
+
+    reg_enum_key_parser = cmd2.Cmd2ArgumentParser(
+        description="Enumerate registry sub keys"
+    )
+    reg_enum_key_parser.add_argument("key_name", type=str)
+
+    @cmd2.as_subcommand_to("reg", "enum_key", reg_enum_key_parser)
+    def reg_enum_key(self, ns: argparse.Namespace):
+        srp, _ = self.connector.iWbemServices.GetObject("StdRegProv")
+
+        hive, path = parse_reg_key(ns.key_name)
+        res = srp.EnumKey(hive, path).sNames
+
+        print("\n".join(res))
+
+    reg_enum_val_parser = cmd2.Cmd2ArgumentParser(
+        description="Enumerate registry values"
+    )
+    reg_enum_val_parser.add_argument("key_name", type=str)
+
+    @cmd2.as_subcommand_to("reg", "enum_values", reg_enum_val_parser)
+    def reg_enum_val(self, ns: argparse.Namespace):
+        srp, _ = self.connector.iWbemServices.GetObject("StdRegProv")
+
+        hive, path = parse_reg_key(ns.key_name)
+        res = srp.EnumValues(hive, path).sNames
+
+        print("\n".join(res))
+
+    reg_query_parser = cmd2.Cmd2ArgumentParser(description="Query registry value")
+    reg_query_parser.add_argument("key_name", type=str)
+    reg_query_parser.add_argument("value", type=str)
+    reg_query_parser.add_argument(
+        "-t", "--type", type=RegValueTypeEnum, choices=list(RegValueTypeEnum)
+    )
+
+    @cmd2.as_subcommand_to("reg", "query", reg_query_parser)
+    def reg_query(self, ns: argparse.Namespace):
+        srp, _ = self.connector.iWbemServices.GetObject("StdRegProv")
+
+        hive, path = parse_reg_key(ns.key_name)
+        res = None
+
+        match ns.type:
+            case RegValueTypeEnum.binary:
+                res = srp.GetBinaryValue(hive, path, ns.value).sValue
+
+            case RegValueTypeEnum.dword:
+                res = srp.GetDWORDValue(hive, path, ns.value).sValue
+
+            case RegValueTypeEnum.qword:
+                res = srp.GetQWORDValue(hive, path, ns.value).sValue
+
+            case RegValueTypeEnum.string:
+                res = srp.GetStringValue(hive, path, ns.value).sValue
+
+        print(res)
 
     def do_loggedon(self, _):
         """Enumerated currently logged-on users"""
