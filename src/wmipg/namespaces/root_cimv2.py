@@ -214,7 +214,11 @@ class CIMv2(cmd2.CommandSet):
     reg_query_parser.add_argument("key_name", type=str)
     reg_query_parser.add_argument("value", type=str)
     reg_query_parser.add_argument(
-        "-t", "--type", type=RegValueTypeEnum, choices=list(RegValueTypeEnum)
+        "-t",
+        "--type",
+        type=RegValueTypeEnum,
+        choices=list(RegValueTypeEnum),
+        default=RegValueTypeEnum.string,
     )
 
     @cmd2.as_subcommand_to("reg", "query", reg_query_parser)
