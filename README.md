@@ -26,15 +26,21 @@ poetry shell
 
 ## root/cimv2
 
-* pslist - Get process list
-* users - Get local users list (net user)
 * env - Print environment variables
-* enum_registry - Enumerate juicy registry content (WinSCP)
 * loggedon - Enumerated currently logged-on users
 * logon_history - Print users logon history information
-* shares - List windows shares
-* profiles - List local user profiles
+* ls - List directory content
 * ping - Get ping result of a remote system
+* profiles - List local user profiles
+* pslist - Get process list
+* reg - StdRegProv operations
+    * enum - Enumerate juicy registry content (WinSCP)
+    * query - Query registry
+* shadow - Interact with shadow copies
+* shares - List windows shares
+* stat - Get info about particular file
+* users - Get local users list (net user)
+* volumes - Get volumes list
 
 ## root/standardcimv2
 

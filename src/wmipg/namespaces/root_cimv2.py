@@ -2,7 +2,7 @@ import re
 import cmd2
 import argparse
 
-from rich import print
+from rich import print, print_json
 from rich.table import Table
 from datetime import datetime, timedelta
 from enum import Enum
@@ -57,6 +57,15 @@ class RegValueTypeEnum(Enum):
     dword = "dword"
     qword = "qword"
     string = "string"
+
+
+class RegValueReturnTypeEnum(Enum):
+    REG_SZ = 1
+    REG_EXPAND_SZ = 2
+    REG_BINARY = 3
+    REG_DWORD = 4
+    REG_MULTI_SZ = 7
+    REG_QWORD = 11
 
 
 REG_MAP = {
@@ -142,18 +151,15 @@ class CIMv2(cmd2.CommandSet):
         )
 
     reg_parser = cmd2.Cmd2ArgumentParser(description="StdRegProv operations")
-    reg_subparsers = reg_parser.add_subparsers(title="entity", help="Comman")
+    reg_subparsers = reg_parser.add_subparsers(title="entity", help="Command")
 
     @cmd2.with_argparser(reg_parser)
     def do_reg(self, ns: argparse.Namespace):
         handler = ns.cmd2_handler.get()
         if handler is not None:
-            # Call whatever subcommand function was selected
             handler(ns)
         else:
-            # No subcommand was provided, so call help
-            self.poutput("This command does nothing without sub-parsers registered")
-            self.do_help("get")
+            self.do_help("reg")
 
     reg_enum_parser = cmd2.Cmd2ArgumentParser(
         description="Enumerate juicy registry content (WinSCP)"
@@ -182,47 +188,7 @@ class CIMv2(cmd2.CommandSet):
 
         print(winscp_res)
 
-    reg_enum_key_parser = cmd2.Cmd2ArgumentParser(
-        description="Enumerate registry sub keys"
-    )
-    reg_enum_key_parser.add_argument("key_name", type=str)
-
-    @cmd2.as_subcommand_to("reg", "enum_key", reg_enum_key_parser)
-    def reg_enum_key(self, ns: argparse.Namespace):
-        srp, _ = self.connector.iWbemServices.GetObject("StdRegProv")
-
-        hive, path = parse_reg_key(ns.key_name)
-        res = srp.EnumKey(hive, path).sNames
-
-        print("\n".join(res))
-
-    reg_enum_val_parser = cmd2.Cmd2ArgumentParser(
-        description="Enumerate registry values"
-    )
-    reg_enum_val_parser.add_argument("key_name", type=str)
-
-    @cmd2.as_subcommand_to("reg", "enum_values", reg_enum_val_parser)
-    def reg_enum_val(self, ns: argparse.Namespace):
-        srp, _ = self.connector.iWbemServices.GetObject("StdRegProv")
-
-        hive, path = parse_reg_key(ns.key_name)
-        res = srp.EnumValues(hive, path).sNames
-
-        print("\n".join(res))
-
-    reg_query_parser = cmd2.Cmd2ArgumentParser(description="Query registry value")
-    reg_query_parser.add_argument("key_name", type=str)
-    reg_query_parser.add_argument("value", type=str)
-    reg_query_parser.add_argument(
-        "-t",
-        "--type",
-        type=RegValueTypeEnum,
-        choices=list(RegValueTypeEnum),
-        default=RegValueTypeEnum.string,
-    )
-
-    @cmd2.as_subcommand_to("reg", "query", reg_query_parser)
-    def reg_query(self, ns: argparse.Namespace):
+    def _reg_query_value(self, srp, ns):
         srp, _ = self.connector.iWbemServices.GetObject("StdRegProv")
 
         hive, path = parse_reg_key(ns.key_name)
@@ -242,6 +208,42 @@ class CIMv2(cmd2.CommandSet):
                 res = srp.GetStringValue(hive, path, ns.value).sValue
 
         print(res)
+
+    def _reg_enum_path(self, srp, ns):
+        hive, path = parse_reg_key(ns.key_name)
+        output = []
+
+        if keys := srp.EnumKey(hive, path).sNames:
+            output.extend([f"{ns.key_name.rstrip('\\')}\\{x}" for x in keys])
+
+        values = srp.EnumValues(hive, path)
+        if values.sNames:
+            for name, _vtype in zip(values.sNames, values.Types):
+                vtype = RegValueReturnTypeEnum(_vtype)
+                output.append(f"{name}\t{vtype.name}")
+
+        print("\n".join(output))
+
+
+    reg_query_parser = cmd2.Cmd2ArgumentParser(description="Query registry")
+    reg_query_parser.add_argument("key_name", type=str)
+    reg_query_parser.add_argument("-v", "--value", type=str, required=False)
+    reg_query_parser.add_argument(
+        "-t",
+        "--type",
+        type=RegValueTypeEnum,
+        choices=list(RegValueTypeEnum),
+        default=RegValueTypeEnum.string,
+    )
+
+    @cmd2.as_subcommand_to("reg", "query", reg_query_parser)
+    def reg_query(self, ns: argparse.Namespace):
+        srp, _ = self.connector.iWbemServices.GetObject("StdRegProv")
+
+        if ns.value:
+            self._reg_query_value(srp, ns)
+        else:
+            self._reg_enum_path(srp, ns)
 
     def do_loggedon(self, _):
         """Enumerated currently logged-on users"""
