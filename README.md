@@ -39,6 +39,9 @@ poetry shell
 * service - Interact with services
     * list - Enumerate services
 * shadow - Interact with shadow copies
+    * create - Create a shadow copy
+    * delete - Remove a shadow copy
+    * list - Enumerate shadow copies
 * shares - List windows shares
 * stat - Get info about particular file
 * users - Get local users list (net user)
