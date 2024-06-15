@@ -7,7 +7,7 @@ from rich.table import Table
 from datetime import datetime, timedelta
 from enum import Enum
 
-from wmipg.common import console, print_data, columnFormatter
+from wmipg.common import console, print_data, columnFormatter, load_security_definitions
 
 
 class ShadowStates(Enum):
@@ -223,7 +223,6 @@ class CIMv2(cmd2.CommandSet):
                 output.append(f"{name}\t{vtype.name}")
 
         print("\n".join(output))
-
 
     reg_query_parser = cmd2.Cmd2ArgumentParser(description="Query registry")
     reg_query_parser.add_argument("key_name", type=str)
@@ -462,3 +461,46 @@ class CIMv2(cmd2.CommandSet):
         path = ns.path.replace("\\", r"\\")
         obj, _ = self.connector.iWbemServices.GetObject(f'CIM_DataFile.Name="{path}"')
         print_data([obj], style="column")
+
+    service_parser = cmd2.Cmd2ArgumentParser(description="Interact with services")
+    service_subparsers = service_parser.add_subparsers(
+        title="action", help="service operation"
+    )
+
+    @cmd2.with_argparser(service_parser)
+    def do_service(self, ns: argparse.Namespace):
+        handler = ns.cmd2_handler.get()
+        if handler is not None:
+            handler(ns)
+        else:
+            self._cmd.do_help("service")
+
+    service_list_parser = cmd2.Cmd2ArgumentParser(description="Enumerate services")
+    service_list_parser.add_argument(
+        "-a", "--all", default=False, action=argparse.BooleanOptionalAction, help='Print all services, not only running'
+    )
+
+    @cmd2.as_subcommand_to("service", "list", service_list_parser)
+    def service_list(self, ns: argparse.Namespace):
+        query = "Select Name,State,ProcessID,PathName,StartMode FROM WIN32_Service"
+
+        if not ns.all:
+            query = f'{query} Where State="Running"'
+
+        secs = load_security_definitions()
+        detections = []
+        def serviceFormatter(prop, obj):
+            value = prop["value"]
+            if prop["name"] == "PathName":
+                name = value.replace('"', '').split('\\')[-1].split(' ')[0].lower()
+                if name in secs:
+                    detections.append(secs[name])
+                    return f"[red]{value}[/red]"
+
+            return value
+
+        print_data(self.connector.get_class_instances_raw(query), customFormatter=serviceFormatter)
+        if detections:
+            print("Found security tools:")
+            for x in detections:
+                print(f"\t{x['process']} - {x['long']}")

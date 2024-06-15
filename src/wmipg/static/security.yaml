@@ -1,0 +1,244 @@
+#https://github.com/BishopFox/sliver/blob/6f4a150d8220419b20e014ab1a11d1e888f6fe1b/client/command/processes/ps.go#L40
+- long: Symantec Endpoint Protection (SEP)
+  process: ccSvcHst.exe
+  short: Symantec Endpoint Protection
+
+- long: Carbon Black
+  process: cb.exe
+  short: Carbon Black
+
+- long: Carbon Black Cloud Sensor
+  process: RepMgr.exe
+  short: Carbon Black Cloud Sensor
+
+- long: Carbon Black Cloud Sensor
+  process: RepUtils.exe
+  short: Carbon Black Cloud Sensor
+
+- long: Carbon Black Cloud Sensor
+  process: RepUx.exe
+  short: Carbon Black Cloud Sensor
+
+- long: Carbon Black Cloud Sensor
+  process: RepWSC.exe
+  short: Carbon Black Cloud Sensor
+
+- long: Carbon Black Cloud Sensor
+  process: scanhost.exe
+  short: Carbon Black Cloud Sensor
+
+- long: Elastic Agent
+  process: elastic-agent.exe
+  short: Elastic Agent
+
+- long: Elastic Agent
+  process: elastic-endpoint.exe
+  short: Elastic Agent
+
+- long: Elastic Agent - log shipper
+  process: filebeat.exe
+  short: Elastic Agent
+
+- long: Elastic Agent - metric shipper
+  process: metricbeat.exe
+  short: Elastic Agent
+
+- long: Windows Defender Smart Screen
+  process: smartscreen.exe
+  short: Windows Smart Screen
+
+- long: Windows Defender Command-line
+  process: MpCmdRun.exe
+  short: Windows Defender
+
+- long: Microsoft Monitoring Agent
+  process: MonitoringHost.exe
+  short: Windows Defender
+
+- long: Microsoft Monitoring Agent
+  process: HealthService.exe
+  short: Windows Defender
+
+- long: Windows Defender (Service Executable)
+  process: MsMpEng.exe
+  short: Windows Defender
+
+- long: Windows Defender (Network Realtime Inspection)
+  process: NisSrv.exe
+  short: Windows Defender
+
+- long: Windows Defender Endpoint (Live Response Session)
+  process: SenseIR.exe
+  short: Windows Defender MDE
+
+- long: Windows Defender Endpoint (Network Detection and Response)
+  process: SenseNdr.exe
+  short: Windows Defender MDE
+
+- long: Windows Defender Endpoint (Screenshot Capture Module)
+  process: SenseSC.exe
+  short: Windows Defender MDE
+
+- long: Windows Defender Endpoint (Classification Engine Module)
+  process: SenseCE.exe
+  short: Windows Defender MDE
+
+- long: Windows Defender Endpoint (Configuration Management Module)
+  process: SenseCM.exe
+  short: Windows Defender MDE
+
+- long: Windows Defender Endpoint (Sample Uploader Module)
+  process: SenseSampleUploader.exe
+  short: Windows Defender MDE
+
+- long: Windows Defender Endpoint (Communication Module)
+  process: SenseCncProxy.exe
+  short: Windows Defender MDE
+
+- long: Windows Defender Endpoint (Service Executable)
+  process: MsSense.exe
+  short: Windows Defender MDE
+
+- long: Crowdstrike Falcon Service
+  process: CSFalconService.exe
+  short: CrowdStrike
+
+- long: CrowdStrike Falcon Container Security
+  process: CSFalconContainer.exe
+  short: CrowdStrike
+
+- long: Bitdefender (Total Security)
+  process: bdservicehost.exe
+  short: Bitdefender
+
+- long: Bitdefender (Total Security)
+  process: bdagent.exe
+  short: Bitdefender
+
+- long: 'Bitdefender Redline Update Service (Source https:'
+  process: bdredline.exe
+  short: Bitdefender
+
+- long: TM Deep Security Manager
+  process: Deep Security Manager.exe
+  short: Trend Micro
+
+- long: TM Anti-malware scan process
+  process: coreServiceShell.exe
+  short: Trend Micro
+
+- long: TM Deep Security Monitor
+  process: ds_monitor.exe
+  short: Trend Micro
+
+- long: TM Deep Security Notifier's process
+  process: Notifier.exe
+  short: Trend Micro
+
+- long: TM Agent's main process
+  process: dsa.exe
+  short: Trend Micro
+
+- long: TM Advanced TLS traffic inspection
+  process: ds_nuagent.exe
+  short: Trend Micro
+
+- long: TM Anti-malware scan process
+  process: coreFrameworkHost.exe
+  short: Trend Micro
+
+- long: Sentinel One
+  process: SentinelServiceHost.exe
+  short: SentinelOne
+
+- long: Sentinel One
+  process: SentinelStaticEngine.exe
+  short: SentinelOne
+
+- long: Sentinel One
+  process: SentinelStaticEngineScanner.exe
+  short: SentinelOne
+
+- long: Sentinel One
+  process: SentinelAgent.exe
+  short: SentinelOne
+
+- long: Sentinel One
+  process: SentinelAgentWorker.exe
+  short: SentinelOne
+
+- long: Sentinel One
+  process: SentinelHelperService.exe
+  short: SentinelOne
+
+- long: Sentinel One
+  process: SentinelBrowserNativeHost.exe
+  short: SentinelOne
+
+- long: Sentinel One
+  process: SentinelUI.exe
+  short: SentinelOne
+
+- long: Sysmon
+  process: Sysmon.exe
+  short: Sysmon
+
+- long: Sysmon64
+  process: Sysmon64.exe
+  short: Sysmon64
+
+- long: Cylance
+  process: CylanceSvc.exe
+  short: Cylance
+
+- long: Cylance
+  process: CylanceUI.exe
+  short: Cylance
+
+- long: Tanium
+  process: TaniumClient.exe
+  short: Tanium
+
+- long: Tanium
+  process: TaniumCX.exe
+  short: Tanium
+
+- long: Tanium
+  process: TaniumDetectEngine.exe
+  short: Tanium
+
+- long: Rapid 7 Insight Platform Collector
+  process: collector.exe
+  short: Rapid 7 Collector
+
+- long: Rapid 7 Insight Agent
+  process: ir_agent.exe
+  short: Rapid 7 Insight Agent
+
+- long: ESET Internet Security
+  process: eguiproxy.exe
+  short: ESET Security
+
+- long: ESET Internet Security
+  process: ekrn.exe
+  short: ESET Security
+
+- long: ESET Internet Security
+  process: efwd.exe
+  short: ESET Security
+
+- long: Cybereason ActiveProbe
+  process: AmSvc.exe
+  short: Cybereason ActiveProbe
+
+- long: Cybereason ActiveProbe
+  process: CrAmTray.exe
+  short: Cybereason ActiveProbe
+
+- long: Cybereason ActiveProbe
+  process: CrsSvc.exe
+  short: Cybereason ActiveProbe
+
+- long: Cybereason ActiveProbe
+  process: CybereasonAV.exe
+  short: Cybereason ActiveProbe

@@ -36,6 +36,8 @@ poetry shell
 * reg - StdRegProv operations
     * enum - Enumerate juicy registry content (WinSCP)
     * query - Query registry
+* service - Interact with services
+    * list - Enumerate services
 * shadow - Interact with shadow copies
 * shares - List windows shares
 * stat - Get info about particular file

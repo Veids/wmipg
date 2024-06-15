@@ -1,6 +1,8 @@
 import logging
 
 from impacket.dcerpc.v5.dtypes import NULL
+from ruamel.yaml import YAML
+from importlib.resources import files
 
 from datetime import datetime
 from rich.table import Table
@@ -75,6 +77,18 @@ def print_data(managementObjects, customFormatter=None, columns=None, style="tab
                 console.print("=" * len(header))
     else:
         log.info("Empty response")
+
+
+def load_security_definitions():
+    yaml = YAML()
+    with open(str(files("wmipg.static").joinpath("security.yaml"))) as f:
+        secs = yaml.load(f.read())
+
+    data = {}
+    for x in secs:
+        data[x['process'].lower()] = x
+
+    return data
 
 
 class WMIConnector:
