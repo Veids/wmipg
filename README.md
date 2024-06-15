@@ -87,6 +87,10 @@ poetry shell
     * machine-policy - Force a device to update a machine policy from SCCM
     * script-approval - Approve a script
 
+## root/Microsoft/Windows/DeviceGuard
+
+* device_guard - get DeviceGuard status
+
 # Credits
 
 * [SharpSCCM](https://github.com/Mayyhem/SharpSCCM)

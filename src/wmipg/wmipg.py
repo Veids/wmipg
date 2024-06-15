@@ -14,11 +14,10 @@ from impacket import version
 from impacket.dcerpc.v5.dcomrt import DCOMConnection, COMVERSION
 from impacket.dcerpc.v5.dcom import wmi
 from impacket.krb5.keytab import Keytab
-from ruamel.yaml import YAML
 from IPython import embed
 
 from wmipg.common import print_data, WMIConnector
-from wmipg.namespaces import CIMv2, StandardCimv2, SecurityCenter2, SMS
+from wmipg.namespaces import CIMv2, StandardCimv2, SecurityCenter2, SMS, DeviceGuard
 
 
 class WMIPG(cmd2.Cmd):
@@ -36,6 +35,7 @@ class WMIPG(cmd2.Cmd):
             StandardCimv2(self.connector),
             SecurityCenter2(self.connector),
             SMS(self.connector),
+            DeviceGuard(self.connector),
         ]
         self.active_sets = []
 
