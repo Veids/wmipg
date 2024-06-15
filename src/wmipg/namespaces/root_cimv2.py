@@ -89,6 +89,7 @@ class CIMv2(cmd2.CommandSet):
         super().__init__()
         self.connector = connector
         self.subcmds = list()
+        self._secs = load_security_definitions()
 
     def check_namespace(self, namespace: str) -> bool:
         return namespace in self.paths
@@ -99,10 +100,17 @@ class CIMv2(cmd2.CommandSet):
     def unload_subcommands(self, _: cmd2.Cmd):
         pass
 
+    def _print_detections(self, detections: list):
+        if detections:
+            print("Found security tools:")
+            for x in detections:
+                print(f"\t{x['process']} - {x['long']}")
+
     def do_pslist(self, _):
         """Get process list"""
 
         res = self.connector.get_class_instances_raw("Select * FROM Win32_Process")
+        detections = []
 
         table = Table(title="Netstat")
         table.add_column("Name")
@@ -121,8 +129,13 @@ class CIMv2(cmd2.CommandSet):
             else:
                 owner = str(owner.Domain) + "\\" + str(owner.User)
 
+            name = str(x.Name)
+            if name.lower() in self._secs:
+                detections.append(self._secs[name.lower()])
+                name = f"[red]{name}[/red]"
+
             table.add_row(
-                str(x.Name),
+                name,
                 str(x.SessionId),
                 str(x.ProcessId),
                 str(x.ParentProcessId),
@@ -131,6 +144,7 @@ class CIMv2(cmd2.CommandSet):
             )
 
         console.print(table)
+        self._print_detections(detections)
 
     def do_users(self, _):
         """Get local users list (net user)"""
@@ -477,7 +491,11 @@ class CIMv2(cmd2.CommandSet):
 
     service_list_parser = cmd2.Cmd2ArgumentParser(description="Enumerate services")
     service_list_parser.add_argument(
-        "-a", "--all", default=False, action=argparse.BooleanOptionalAction, help='Print all services, not only running'
+        "-a",
+        "--all",
+        default=False,
+        action=argparse.BooleanOptionalAction,
+        help="Print all services, not only running",
     )
 
     @cmd2.as_subcommand_to("service", "list", service_list_parser)
@@ -487,20 +505,20 @@ class CIMv2(cmd2.CommandSet):
         if not ns.all:
             query = f'{query} Where State="Running"'
 
-        secs = load_security_definitions()
         detections = []
+
         def serviceFormatter(prop, obj):
             value = prop["value"]
             if prop["name"] == "PathName":
-                name = value.replace('"', '').split('\\')[-1].split(' ')[0].lower()
-                if name in secs:
-                    detections.append(secs[name])
+                name = value.replace('"', "").split("\\")[-1].split(" ")[0].lower()
+                if name in self._secs:
+                    detections.append(self._secs[name])
                     return f"[red]{value}[/red]"
 
             return value
 
-        print_data(self.connector.get_class_instances_raw(query), customFormatter=serviceFormatter)
-        if detections:
-            print("Found security tools:")
-            for x in detections:
-                print(f"\t{x['process']} - {x['long']}")
+        print_data(
+            self.connector.get_class_instances_raw(query),
+            customFormatter=serviceFormatter,
+        )
+        self._print_detections(detections)
