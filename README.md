@@ -26,16 +26,19 @@ poetry shell
 
 ## root/cimv2
 
+* cp - Copy a file
 * env - Print environment variables
 * loggedon - Enumerated currently logged-on users
 * logon_history - Print users logon history information
 * ls - List directory content
+* mv - Move/Rename a file
 * ping - Get ping result of a remote system
 * profiles - List local user profiles
 * pslist - Get process list
 * reg - StdRegProv operations
     * enum - Enumerate juicy registry content (WinSCP)
     * query - Query registry
+* rm - Remove a file
 * service - Interact with services
     * list - Enumerate services
 * shadow - Interact with shadow copies

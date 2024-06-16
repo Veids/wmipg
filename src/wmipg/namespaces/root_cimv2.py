@@ -2,6 +2,7 @@ import re
 import cmd2
 import argparse
 
+from impacket import system_errors
 from rich import print, print_json
 from rich.table import Table
 from datetime import datetime, timedelta
@@ -473,8 +474,57 @@ class CIMv2(cmd2.CommandSet):
     @cmd2.with_argparser(stat_parser)
     def do_stat(self, ns: argparse.Namespace):
         path = ns.path.replace("\\", r"\\")
-        obj, _ = self.connector.iWbemServices.GetObject(f'CIM_DataFile.Name="{path}"')
+        obj, _ = self.connector.iWbemServices.GetObject(f"CIM_DataFile.Name='{path}'")
         print_data([obj], style="column")
+
+    mv_parser = cmd2.Cmd2ArgumentParser(description="Move/Rename a file")
+    mv_parser.add_argument("source", action="store", type=str, help="C:\\log.txt")
+    mv_parser.add_argument("dest", action="store", type=str, help="C:\\log2.txt")
+
+    @cmd2.with_argparser(mv_parser)
+    def do_mv(self, ns: argparse.Namespace):
+        source = ns.source.replace("\\", r"\\")
+        dest = ns.dest.replace("\\", r"\\")
+
+        # TIPS: will fail if Name='' contains double quotes
+        obj, _ = self.connector.iWbemServices.GetObject(f"CIM_DataFile.Name='{source}'")
+        res = obj.Rename(dest)
+        rv = res.ReturnValue
+        msg = " - ".join(system_errors.ERROR_MESSAGES[rv])
+
+        print(f"Result {rv}: {msg}")
+
+    cp_parser = cmd2.Cmd2ArgumentParser(description="Copy a file")
+    cp_parser.add_argument("source", action="store", type=str, help="C:\\log.txt")
+    cp_parser.add_argument("dest", action="store", type=str, help="C:\\log2.txt")
+
+    @cmd2.with_argparser(cp_parser)
+    def do_cp(self, ns: argparse.Namespace):
+        source = ns.source.replace("\\", r"\\")
+        dest = ns.dest.replace("\\", r"\\")
+
+        # TIPS: will fail if Name='' contains double quotes
+        obj, _ = self.connector.iWbemServices.GetObject(f"CIM_DataFile.Name='{source}'")
+        res = obj.Copy(dest)
+        rv = res.ReturnValue
+        msg = " - ".join(system_errors.ERROR_MESSAGES[rv])
+
+        print(f"Result {rv}: {msg}")
+
+    rm_parser = cmd2.Cmd2ArgumentParser(description="Remove a file")
+    rm_parser.add_argument("path", action="store", type=str, help="C:\\log.txt")
+
+    @cmd2.with_argparser(rm_parser)
+    def do_rm(self, ns: argparse.Namespace):
+        path = ns.path.replace("\\", r"\\")
+
+        # TIPS: will fail if Name='' contains double quotes
+        obj, _ = self.connector.iWbemServices.GetObject(f"CIM_DataFile.Name='{path}'")
+        res = obj.Delete()
+        rv = res.ReturnValue
+        msg = " - ".join(system_errors.ERROR_MESSAGES[rv])
+
+        print(f"Result {rv}: {msg}")
 
     service_parser = cmd2.Cmd2ArgumentParser(description="Interact with services")
     service_subparsers = service_parser.add_subparsers(
