@@ -279,12 +279,21 @@ class CIMv2(cmd2.CommandSet):
         help="Days delta (0 means all)",
     )
 
+    def _parse_insertion_strings(self, iss):
+        login = iss[5]
+        domain = iss[6]
+        ap = iss[9]
+        lp = iss[10]
+        ip = iss[18]
+
+        return login, domain, ap, lp, ip
+
     @cmd2.with_argparser(login_history_parser)
     def do_logon_history(self, ns: argparse.Namespace):
         """Print users logon history information"""
 
         request = [
-            "Select TimeGenerated,Message FROM Win32_NTLogEvent WHERE Logfile='Security' AND EventCode='4624'"
+            "Select TimeGenerated,InsertionStrings FROM Win32_NTLogEvent WHERE Logfile='Security' AND EventCode='4624'"
         ]
 
         if ns.days != 0:
@@ -297,12 +306,6 @@ class CIMv2(cmd2.CommandSet):
             request.append(f"AND Message LIKE '%{ns.login}%'")
 
         events = self.connector.get_class_instances_raw(" ".join(request))
-        ipmask = r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"
-        lpmask = r"Logon Process:(.*)"
-        apmask = r"Authentication Package:(.*)"
-        pnmask = r"Package Name (NTLM only):(.*)"
-        loginmask = r"Account Name:(.*)"
-        domainmask = r"Account Domain:(.*)"
 
         table = Table(title="Win32_NTLogEvent")
         table.add_column("TimeGenerated")
@@ -310,25 +313,14 @@ class CIMv2(cmd2.CommandSet):
         table.add_column("Login")
         table.add_column("LP")
         table.add_column("AP")
-        table.add_column("PN")
 
         for event in events:
-            source_ip = ",".join(re.findall(ipmask, event.Message))
-            if source_ip == "":
-                continue
-
-            lp = ",".join(x.strip() for x in re.findall(lpmask, event.Message))
-            ap = ",".join(x.strip() for x in re.findall(apmask, event.Message))
-            pn = ",".join(x.strip() for x in re.findall(pnmask, event.Message))
-
-            logins = re.findall(loginmask, event.Message)
-            domains = re.findall(domainmask, event.Message)
-            pairs = list(map(lambda l, d: f"{d.strip()}\\{l.strip()}", logins, domains))
+            login, domain, ap, lp, ip = self._parse_insertion_strings(event.InsertionStrings)
 
             date = str(
                 datetime.strptime(event.TimeGenerated.split(".")[0], "%Y%m%d%H%M%S")
             )
-            table.add_row(date, pairs[1], source_ip, lp, ap, pn)
+            table.add_row(date, ip, f"{domain}\\{login}", lp, ap)
 
         console.print(table)
 
