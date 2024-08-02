@@ -113,7 +113,7 @@ class CIMv2(cmd2.CommandSet):
         res = self.connector.get_class_instances_raw("Select * FROM Win32_Process")
         detections = []
 
-        table = Table(title="Netstat")
+        table = Table(title="Win32_Process")
         table.add_column("Name")
         table.add_column("SessionId")
         table.add_column("PID")
@@ -125,7 +125,7 @@ class CIMv2(cmd2.CommandSet):
 
         for x in res:
             owner = x.GetOwner()
-            if owner.User is None and owner.Domain is None:
+            if (owner and owner.User and owner.Domain) is None:
                 owner = "-"
             else:
                 owner = str(owner.Domain) + "\\" + str(owner.User)
