@@ -41,11 +41,18 @@ poetry shell
 * rm - Remove a file
 * service - Interact with services
     * list - Enumerate services
+    * start - Start a service
+    * stop - Stop a service
+    * change_start_mode - Change start mode (e.g. auto)
 * shadow - Interact with shadow copies
     * create - Create a shadow copy
     * delete - Remove a shadow copy
     * list - Enumerate shadow copies
-* shares - List windows shares
+* share - Interact with Windows shares
+    * list - List shares
+    * create - Create a Windows share
+    * delete - Delete a Windows share
+    * get_access_mask - Get access mask of a Windows share
 * stat - Get info about particular file
 * users - Get local users list (net user)
 * volumes - Get volumes list
