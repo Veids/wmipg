@@ -1,9 +1,5 @@
 import cmd2
-import argparse
 
-from enum import Enum
-
-from wmipg.common import print_data
 from wmipg.cimv2.cmds import (
     RegistryCMD,
     ServiceCMD,
