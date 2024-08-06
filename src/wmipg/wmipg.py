@@ -24,7 +24,12 @@ class WMIPG(cmd2.Cmd):
     currentNamespace: str = ""
 
     def __init__(self, *args, **kwargs):
-        super().__init__(allow_cli_args=False, auto_load_commands=False, **kwargs)
+        super().__init__(
+            allow_cli_args=False,
+            auto_load_commands=False,
+            persistent_history_file="~/.wmipg_history",
+            **kwargs,
+        )
 
         self.prompt = "WMIPG> "
         self.default_category = "cmd2 Built-in Commands"
