@@ -96,7 +96,8 @@ class Registry:
         output = []
 
         if keys := srp.EnumKey(hive, path).sNames:
-            output.extend([f"{key_name.rstrip('\\')}\\{x}" for x in keys])
+            key_name_stripped = key_name.rstrip('\\') + "\\"
+            output.extend([f"{key_name_stripped}{x}" for x in keys])
 
         values = srp.EnumValues(hive, path)
         if values.sNames:
