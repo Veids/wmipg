@@ -10,6 +10,7 @@ dependencies = [
     "impacket>=0.12.0",
     "cmd2>=3.5.1,<4",
     "ipython>=9.13.0,<10",
+    "pycryptodomex>=3.23.0",
     "ruamel-yaml>=0.19.1,<0.20",
     "setuptools>=80.9.0",
 ]

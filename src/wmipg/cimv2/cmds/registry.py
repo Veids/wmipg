@@ -27,7 +27,7 @@ class RegistryCMD(cmd2.CommandSet):
             self.do_help("reg")
 
     reg_enum_parser = cmd2.Cmd2ArgumentParser(
-        description="Enumerate juicy registry content (WinSCP)"
+        description="Enumerate juicy registry content (WinSCP, RealVNC)"
     )
 
     @cmd2.as_subcommand_to("reg", "enum", reg_enum_parser)
@@ -73,7 +73,9 @@ class RegistryCMD(cmd2.CommandSet):
 
         print(f"Result {rv}: {msg}")
 
-    reg_delete_parser = cmd2.Cmd2ArgumentParser(description="Delete registry key")
+    reg_delete_parser = cmd2.Cmd2ArgumentParser(
+        description="Delete registry key"
+    )
     reg_delete_parser.add_argument("key_name", type=str)
     reg_delete_parser.add_argument("-v", "--value", type=str, required=True)
 
