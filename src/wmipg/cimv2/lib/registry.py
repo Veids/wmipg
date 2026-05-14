@@ -78,7 +78,7 @@ class Registry:
 
         match type:
             case RegValueTypeEnum.binary:
-                res = srp.GetBinaryValue(hive, path, value).sValue
+                res = srp.GetBinaryValue(hive, path, value).uValue
 
             case RegValueTypeEnum.dword:
                 res = srp.GetDWORDValue(hive, path, value).uValue
