@@ -242,3 +242,11 @@
 - long: Cybereason ActiveProbe
   process: CybereasonAV.exe
   short: Cybereason ActiveProbe
+
+- long: Kaspersky Anti-Virus
+  process: avp.exe
+  short: Kaspersky Anti-Virus
+
+- long: Kaspersky Anti-Virus
+  process: klnagent.exe
+  short: Kaspersky Anti-Virus
