@@ -155,6 +155,7 @@ class Registry:
         single_password_hash = self._text_or_none(
             root, "single_password_hash"
         )
+        custom_server_list = self._text_or_none(root, "custom_server_list")
         user_access = [
             self._parse_rms_user_access(user)
             for user in root.findall(
@@ -169,6 +170,7 @@ class Registry:
             "SinglePasswordHash": single_password_hash,
             "UserAccessListEnabled": bool(user_access),
             "UserAccessList": user_access,
+            "CustomServerListEnabled": bool(custom_server_list),
         }
 
         if windows_security:
@@ -178,6 +180,14 @@ class Registry:
                 )
             except ValueError as e:
                 res["WindowsSecurityError"] = str(e)
+
+        if custom_server_list:
+            try:
+                res["CustomServerList"] = self._parse_rms_custom_server_list(
+                    custom_server_list
+                )
+            except ValueError as e:
+                res["CustomServerListError"] = str(e)
 
         return res
 
@@ -218,6 +228,44 @@ class Registry:
             raise ValueError(
                 "unable to parse Windows security descriptor"
             ) from e
+
+    @staticmethod
+    def _parse_rms_custom_server_list(data):
+        root = Registry._decode_base64_xml(data, "custom_server_list")
+        return [
+            Registry._parse_rms_custom_server(server)
+            for server in root.findall("./rms_servers/server_connect")
+        ]
+
+    @staticmethod
+    def _parse_rms_custom_server(server):
+        host = Registry._text_or_none(server, "host")
+        port = Registry._text_or_none(server, "port")
+        address = host
+        if host and port:
+            address = f"{host}:{port}"
+
+        return {
+            "Caption": Registry._text_or_none(server, "caption"),
+            "Address": address,
+        }
+
+    @staticmethod
+    def _decode_base64_xml(data, field_name):
+        try:
+            raw_data = b64decode(data.strip(), validate=True)
+        except BinasciiError as e:
+            raise ValueError(f"invalid base64 {field_name} value") from e
+
+        try:
+            xml_data = raw_data.decode("utf-8-sig")
+        except UnicodeDecodeError as e:
+            raise ValueError(f"invalid {field_name} XML encoding") from e
+
+        try:
+            return ElementTree.fromstring(xml_data)
+        except ElementTree.ParseError as e:
+            raise ValueError(f"invalid {field_name} XML") from e
 
     @staticmethod
     def _decode_acl(acl):
