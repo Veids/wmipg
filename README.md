@@ -36,7 +36,7 @@ poetry shell
 * profiles - List local user profiles
 * pslist - Get process list
 * reg - StdRegProv operations
-    * enum - Enumerate juicy registry content (WinSCP, RealVNC)
+    * enum - Enumerate juicy registry content (WinSCP, RealVNC, RMS Host)
     * query - Query registry
 * rm - Remove a file
 * service - Interact with services

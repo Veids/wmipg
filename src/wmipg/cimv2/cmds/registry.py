@@ -3,8 +3,10 @@ import cmd2
 import argparse
 
 from impacket import system_errors
+from rich.pretty import Pretty
 
 from wmipg.cimv2.lib.registry import Registry, RegValueTypeEnum
+from wmipg.common import console
 
 
 @cmd2.with_default_category("System")
@@ -27,13 +29,15 @@ class RegistryCMD(cmd2.CommandSet):
             self.do_help("reg")
 
     reg_enum_parser = cmd2.Cmd2ArgumentParser(
-        description="Enumerate juicy registry content (WinSCP, RealVNC)"
+        description=(
+            "Enumerate juicy registry content (WinSCP, RealVNC, RMS Host)"
+        )
     )
 
     @cmd2.as_subcommand_to("reg", "enum", reg_enum_parser)
     def reg_enum(self, _):
         res = self.registry.enum()
-        print(res)
+        console.print(Pretty(res, expand_all=True))
 
     reg_query_parser = cmd2.Cmd2ArgumentParser(description="Query registry")
     reg_query_parser.add_argument("key_name", type=str)

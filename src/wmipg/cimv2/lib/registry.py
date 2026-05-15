@@ -1,7 +1,12 @@
+from base64 import b64decode
 from binascii import Error as BinasciiError, unhexlify
 from enum import Enum
 from typing import Optional
+from xml.etree import ElementTree
+
 from Cryptodome.Cipher import DES
+from impacket.ldap.ldaptypes import ACL, SR_SECURITY_DESCRIPTOR
+
 from wmipg.common import WMIConnector
 
 REG_MAP = {
@@ -81,6 +86,7 @@ class Registry:
 
         res["WinSCP"] = winscp_res
         res["RealVNC"] = self._enum_realvnc(srp)
+        res["RMSHost"] = self._enum_rms_host(srp)
         return res
 
     def _enum_realvnc(self, srp):
@@ -124,6 +130,168 @@ class Registry:
     @staticmethod
     def _reg_get_string(srp, hive, path, value):
         return srp.GetStringValue(hive, path, value).sValue
+
+    def _enum_rms_host(self, srp):
+        hklm = REG_MAP["HKLM"]
+        path = r"Software\TektonIT\RMS Host\Host\Parameters"
+        security = self._reg_get_binary(srp, hklm, path, "Security")
+        if not security:
+            return {}
+
+        try:
+            xml_data = bytes(security).decode("utf-8-sig")
+        except UnicodeDecodeError as e:
+            return {"SecurityDecodeError": str(e)}
+
+        try:
+            root = ElementTree.fromstring(xml_data)
+        except ElementTree.ParseError as e:
+            return {"SecurityParseError": str(e)}
+
+        return self._parse_rms_security_settings(root)
+
+    def _parse_rms_security_settings(self, root):
+        windows_security = self._text_or_none(root, "windows_security")
+        single_password_hash = self._text_or_none(
+            root, "single_password_hash"
+        )
+        user_access = [
+            self._parse_rms_user_access(user)
+            for user in root.findall(
+                "./my_user_access_list/user_access_list/user_access"
+            )
+        ]
+
+        res = {
+            "Version": root.attrib.get("version"),
+            "WindowsSecurityEnabled": bool(windows_security),
+            "SinglePasswordEnabled": bool(single_password_hash),
+            "SinglePasswordHash": single_password_hash,
+            "UserAccessListEnabled": bool(user_access),
+            "UserAccessList": user_access,
+        }
+
+        if windows_security:
+            try:
+                res["WindowsSecurity"] = self._decode_windows_security(
+                    windows_security
+                )
+            except ValueError as e:
+                res["WindowsSecurityError"] = str(e)
+
+        return res
+
+    def _parse_rms_user_access(self, user):
+        return {
+            "SID": self._text_or_none(user, "sid"),
+            "UserName": self._text_or_none(user, "user_name"),
+            "PasswordHash": self._text_or_none(user, "password"),
+            "AccessMask": self._int_or_none(user, "access_mask"),
+            "Active": self._bool_or_none(user, "active"),
+        }
+
+    @staticmethod
+    def _decode_windows_security(data):
+        try:
+            raw_data = b64decode(data.strip(), validate=True)
+        except BinasciiError as e:
+            raise ValueError("invalid base64 Windows security value") from e
+
+        try:
+            sd = SR_SECURITY_DESCRIPTOR(data=raw_data)
+            return {
+                "Type": "SecurityDescriptor",
+                "Control": sd["Control"],
+                "OwnerSID": Registry._format_sid(sd["OwnerSid"]),
+                "GroupSID": Registry._format_sid(sd["GroupSid"]),
+                "DACL": Registry._decode_acl(sd["Dacl"]),
+            }
+        except Exception:
+            pass
+
+        try:
+            return {
+                "Type": "ACL",
+                "DACL": Registry._decode_acl(ACL(data=raw_data)),
+            }
+        except Exception as e:
+            raise ValueError(
+                "unable to parse Windows security descriptor"
+            ) from e
+
+    @staticmethod
+    def _decode_acl(acl):
+        if not acl or acl == b"":
+            return None
+
+        return {
+            "Revision": acl["AclRevision"],
+            "AceCount": acl["AceCount"],
+            "ACEs": [
+                Registry._decode_ace(ace)
+                for ace in getattr(acl, "aces", [])
+            ],
+        }
+
+    @staticmethod
+    def _decode_ace(ace):
+        ace_data = ace["Ace"]
+        res = {
+            "Type": ace["TypeName"],
+            "Flags": ace["AceFlags"],
+        }
+
+        if "Mask" in ace_data.fields:
+            res["Mask"] = ace_data["Mask"]["Mask"]
+
+        if "Sid" in ace_data.fields:
+            res["SID"] = ace_data["Sid"].formatCanonical()
+
+        return res
+
+    @staticmethod
+    def _format_sid(sid):
+        if not sid or sid == b"":
+            return None
+
+        return sid.formatCanonical()
+
+    @staticmethod
+    def _text_or_none(element, path):
+        value = element.findtext(path)
+        if value is None:
+            return None
+
+        return value.strip()
+
+    @staticmethod
+    def _int_or_none(element, path):
+        value = Registry._text_or_none(element, path)
+        if value is None:
+            return None
+
+        try:
+            return int(value)
+        except ValueError:
+            return value
+
+    @staticmethod
+    def _bool_or_none(element, path):
+        value = Registry._text_or_none(element, path)
+        if value is None:
+            return None
+
+        if value.lower() == "true":
+            return True
+
+        if value.lower() == "false":
+            return False
+
+        return value
+
+    @staticmethod
+    def _reg_get_binary(srp, hive, path, value):
+        return srp.GetBinaryValue(hive, path, value).uValue
 
     def _reg_query_value(
         self, srp, key_name: str, value: Optional[str], type: RegValueTypeEnum
