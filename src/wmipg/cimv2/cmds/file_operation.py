@@ -1,5 +1,6 @@
 import cmd2
 import argparse
+import json
 
 from rich.table import Table
 from impacket import system_errors
@@ -24,6 +25,9 @@ class FileOperationCMD(cmd2.CommandSet):
         print_data(self.file_operation.list_volumes())
 
     ls_parser = cmd2.Cmd2ArgumentParser(description="List directory content")
+    ls_parser.add_argument(
+        "-j", "--json", action="store_true", help="Output as JSON"
+    )
     ls_parser.add_argument("path", action="store", type=str, help="c:\\")
 
     @cmd2.with_argparser(ls_parser)
@@ -31,6 +35,20 @@ class FileOperationCMD(cmd2.CommandSet):
         directories, files = self.file_operation.list_files(ns.path)
 
         columns = ["Caption", "CreationDate", "LastAccessed", "FileSize", "Version"]
+        if ns.json:
+            data = []
+            for obj in directories + files:
+                props = obj.getProperties()
+                data.append(
+                    {
+                        column: props[column]["value"] if column in props else None
+                        for column in columns
+                    }
+                )
+
+            print(json.dumps(data, indent=2, default=str))
+            return
+
         table = Table(*columns, title="Directory content")
 
         for obj in directories + files:
